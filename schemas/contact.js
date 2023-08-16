@@ -18,12 +18,15 @@ const contactSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    owner: {
+      type: Schema.Types.ObjectId,
+      ref: "user",
+    },
   },
   { versionKey: false }
 );
 
 const Contact = model("contacts", contactSchema);
-
 contactSchema.post("save", handleMongooseError);
 
 const bodySchema = Joi.object({
