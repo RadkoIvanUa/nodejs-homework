@@ -1,15 +1,15 @@
 const { HttpError, controllersWrapper } = require("../helpers");
 
-const contacts = require("../models/contacts");
+const { Contact } = require("../schemas/contact");
 
 const getAll = async (req, res, next) => {
-  const data = await contacts.listContacts();
+  const data = await Contact.find();
   return res.json(data);
 };
 
 const getContactById = async (req, res, next) => {
   const { contactId } = req.params;
-  const contact = await contacts.getContactById(contactId);
+  const contact = await Contact.findById(contactId);
   if (!contact) {
     throw HttpError(404, "Not Found!");
   }
@@ -17,13 +17,13 @@ const getContactById = async (req, res, next) => {
 };
 
 const addContact = async (req, res, next) => {
-  const contact = await contacts.addContact(req.body);
+  const contact = await Contact.create(req.body);
   return res.status(201).json(contact);
 };
 
 const deleteContactById = async (req, res, next) => {
   const { contactId } = req.params;
-  const deletedContact = await contacts.removeContact(contactId);
+  const deletedContact = await Contact.findByIdAndRemove(contactId);
   if (!deletedContact) {
     throw HttpError(404, "Not found");
   }
@@ -34,9 +34,23 @@ const deleteContactById = async (req, res, next) => {
 
 const updateCotnactById = async (req, res, next) => {
   const { contactId } = req.params;
-  const updatedContact = await contacts.updateContact(contactId, req.body);
+  const updatedContact = await Contact.findByIdAndUpdate(contactId, req.body, {
+    new: true,
+  });
   if (!updatedContact) {
     throw HttpError(404, "Not Found!");
+  }
+  res.json(updatedContact);
+};
+
+const updateFavoriteById = async (req, res, next) => {
+  const { contactId } = req.params;
+
+  const updatedContact = await Contact.findByIdAndUpdate(contactId, req.body, {
+    new: true,
+  });
+  if (!updatedContact) {
+    throw HttpError(404, "Not found!");
   }
   res.json(updatedContact);
 };
@@ -47,4 +61,5 @@ module.exports = {
   addContact: controllersWrapper(addContact),
   deleteContactById: controllersWrapper(deleteContactById),
   updateCotnactById: controllersWrapper(updateCotnactById),
+  updateFavoriteById: controllersWrapper(updateFavoriteById),
 };
