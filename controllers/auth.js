@@ -1,5 +1,9 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const gravatar = require("gravatar");
+const path = require("path");
+const fs = require("fs/promises");
+const resizeAvatar = require("../helpers/resizeUserAvatar");
 
 require("dotenv").config();
 
@@ -8,6 +12,8 @@ const { HttpError, controllersWrapper } = require("../helpers");
 const { User } = require("../schemas/user");
 
 const { SECRET_KEY } = process.env;
+
+const avatarsDir = path.join(__dirname, "../", "public", "avatars");
 
 const register = async (req, res) => {
   const { password, email } = req.body;
@@ -18,8 +24,13 @@ const register = async (req, res) => {
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
+  const avatarURL = gravatar.url(email);
 
-  const newUser = await User.create({ ...req.body, password: hashedPassword });
+  const newUser = await User.create({
+    ...req.body,
+    password: hashedPassword,
+    avatarURL,
+  });
 
   res.status(201).json({
     email: newUser.email,
@@ -87,10 +98,32 @@ const updateSubscriptionById = async (req, res) => {
   res.json(updatedUser);
 };
 
+const updateAvatar = async (req, res) => {
+  const { _id } = req.user;
+  const { path: tempUpload, originalname } = req.file;
+
+  const filename = `${_id}_${originalname}`;
+  const resultUpload = path.join(avatarsDir, filename);
+
+  await fs.rename(tempUpload, resultUpload);
+
+  resizeAvatar(resultUpload);
+
+  const avatarURL = path.join("avatars", filename);
+  await User.findByIdAndUpdate(_id, { avatarURL });
+
+  res.json({
+    avatarURL,
+  });
+
+  console.log("ok");
+};
+
 module.exports = {
   register: controllersWrapper(register),
   login: controllersWrapper(login),
   getCurrent: controllersWrapper(getCurrent),
   logout: controllersWrapper(logout),
   updateSubscriptionById: controllersWrapper(updateSubscriptionById),
+  updateAvatar: controllersWrapper(updateAvatar),
 };
